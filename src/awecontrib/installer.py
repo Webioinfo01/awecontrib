@@ -13,13 +13,13 @@ class InstallError(Exception):
     pass
 
 
-def install(repo: Path, kind: str | None, force: bool) -> list[str]:
+def install(repo: Path, kind: str | None, force: bool, with_ci: bool = True) -> list[str]:
     """Install verify + CI into *repo*. Returns a report of what changed."""
     kind = kind or _detect_kind(repo)
     if kind == "python":
-        return _install_python(repo, force)
+        return _install_python(repo, force, with_ci)
     if kind == "node":
-        return _install_node(repo, force)
+        return _install_node(repo, force, with_ci)
     raise InstallError("unknown kind %r (expected --python or --node)" % kind)
 
 
@@ -35,20 +35,21 @@ def _detect_kind(repo: Path) -> str:
     raise InstallError("no pyproject.toml or package.json in %s" % repo)
 
 
-def _install_python(repo: Path, force: bool) -> list[str]:
+def _install_python(repo: Path, force: bool, with_ci: bool) -> list[str]:
     verify = repo / "verify"
     ci = repo / ".github" / "workflows" / "ci.yml"
-    _guard_existing(repo, [verify, ci], force)
+    _guard_existing(repo, [verify] + ([ci] if with_ci else []), force)
 
     pyproject = (repo / "pyproject.toml").read_text()
     _write_file(verify, templates.verify_python("[tool.ruff]" in pyproject), executable=True)
     report = ["wrote verify (executable)"]
 
-    # Reuse the dev extra when it already pulls pytest; otherwise install pytest
-    # alongside the package so verify works out of the box.
-    install_spec = '-e ".[dev]"' if "pytest" in pyproject else "-e . pytest"
-    _write_file(ci, templates.ci_python(install_spec))
-    report.append("wrote .github/workflows/ci.yml (pip install %s)" % install_spec)
+    if with_ci:
+        # Reuse the dev extra when it already pulls pytest; otherwise install pytest
+        # alongside the package so verify works out of the box.
+        install_spec = '-e ".[dev]"' if "pytest" in pyproject else "-e . pytest"
+        _write_file(ci, templates.ci_python(install_spec))
+        report.append("wrote .github/workflows/ci.yml (pip install %s)" % install_spec)
 
     added = _append_gitignore(repo, templates.GITIGNORE_PYTHON)
     if added:
@@ -56,12 +57,12 @@ def _install_python(repo: Path, force: bool) -> list[str]:
     return report
 
 
-def _install_node(repo: Path, force: bool) -> list[str]:
+def _install_node(repo: Path, force: bool, with_ci: bool) -> list[str]:
     pkg_path = repo / "package.json"
     pkg = json.loads(pkg_path.read_text())
     scripts = pkg.setdefault("scripts", {})
     ci = repo / ".github" / "workflows" / "ci.yml"
-    _guard_existing(repo, [ci], force)
+    _guard_existing(repo, [ci] if with_ci else [], force)
     if "verify" in scripts and not force:
         raise InstallError("refusing to overwrite scripts.verify in package.json; pass --force")
 
@@ -74,9 +75,10 @@ def _install_node(repo: Path, force: bool) -> list[str]:
     pkg_path.write_text(json.dumps(pkg, indent=2, ensure_ascii=False) + "\n")
     report = ['updated package.json (scripts.verify = "%s")' % scripts["verify"]]
 
-    pm = _detect_pm(repo)
-    _write_file(ci, templates.ci_node(pm, (repo / "package-lock.json").is_file()))
-    report.append("wrote .github/workflows/ci.yml (%s)" % pm)
+    if with_ci:
+        pm = _detect_pm(repo)
+        _write_file(ci, templates.ci_node(pm, (repo / "package-lock.json").is_file()))
+        report.append("wrote .github/workflows/ci.yml (%s)" % pm)
 
     added = _append_gitignore(repo, templates.GITIGNORE_NODE)
     if added:

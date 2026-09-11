@@ -186,3 +186,32 @@ def test_node_refuses_existing_verify_script(make_repo, monkeypatch):
 
     result = _run("install", "--force")
     assert result.exit_code == 0, _out(result)
+
+
+def test_no_ci_keeps_existing_workflow(make_repo, monkeypatch):
+    existing_ci = "name: Custom\n\non: [push]\n"
+    repo = make_repo(
+        {
+            "pyproject.toml": PYPROJECT_PLAIN,
+            ".github/workflows/ci.yml": existing_ci,
+            ".github/workflows/release.yml": "name: Release\n",
+        }
+    )
+    monkeypatch.chdir(repo)
+
+    result = _run("install", "--no-ci")
+    assert result.exit_code == 0, _out(result)
+    assert "wrote verify" in _out(result)
+    assert (repo / "verify").is_file()
+    assert (repo / ".github" / "workflows" / "ci.yml").read_text() == existing_ci
+    assert (repo / ".github" / "workflows" / "release.yml").read_text() == "name: Release\n"
+    assert ".gitignore" in _out(result)
+
+
+def test_no_ci_still_refuses_existing_verify(make_repo, monkeypatch):
+    repo = make_repo({"pyproject.toml": PYPROJECT_PLAIN, "verify": "#!/bin/sh\ntrue\n"})
+    monkeypatch.chdir(repo)
+
+    result = _run("install", "--no-ci")
+    assert result.exit_code != 0
+    assert "refusing to overwrite" in _out(result)

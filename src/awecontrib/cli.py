@@ -20,10 +20,11 @@ def main() -> None:
 @click.option("--python", "kind", flag_value="python", default=None, help="Treat the repo as a Python project.")
 @click.option("--node", "kind", flag_value="node", default=None, help="Treat the repo as a Node project.")
 @click.option("--force", is_flag=True, help="Overwrite an existing verify entry or CI file.")
-def install(kind: str | None, force: bool) -> None:
+@click.option("--no-ci", is_flag=True, help="Only write the verify entry; keep existing CI untouched.")
+def install(kind: str | None, force: bool, no_ci: bool) -> None:
     """Write the verify entry point and CI workflow into the current repo."""
     try:
-        report = installer.install(Path.cwd(), kind, force)
+        report = installer.install(Path.cwd(), kind, force, with_ci=not no_ci)
     except installer.InstallError as exc:
         _fail(exc)
     for line in report:
