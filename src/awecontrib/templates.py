@@ -27,9 +27,12 @@ _VERIFY_HEADER = """#!/usr/bin/env bash
 set -e
 cd "$(dirname "$0")"
 
-# Prefer the repo venv when present; CI installs deps into python3 directly.
-PY=".venv/bin/python"
-[ -x "$PY" ] || PY="python3"
+# Prefer the repo venv when present; CI installs deps into a system python.
+if [ -x ".venv/bin/python" ]; then PY=".venv/bin/python"
+elif [ -x ".venv/Scripts/python.exe" ]; then PY=".venv/Scripts/python.exe"
+elif command -v python3 >/dev/null 2>&1; then PY="python3"
+else PY="python"
+fi
 """
 
 _VERIFY_HYGIENE = """
