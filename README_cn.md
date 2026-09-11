@@ -24,6 +24,14 @@ awe 系列是一个仓库一个仓库长出来的，接缝都在：有的 releas
 pip install awecontrib
 ```
 
+### Agent 技能
+
+仓库自带配套技能 `resources/skills/awecontrib`，告诉 coding agent 什么时候该用这个 CLI：
+
+```bash
+aweskill install Webioinfo01/awecontrib
+```
+
 ## 命令
 
 ### `awecontrib install`

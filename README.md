@@ -28,6 +28,14 @@ The awe series grew one repo at a time, and the seams show: some release workflo
 pip install awecontrib
 ```
 
+### Agent skill
+
+The repo ships a companion skill at `resources/skills/awecontrib` so coding agents know when to reach for this CLI:
+
+```bash
+aweskill install Webioinfo01/awecontrib
+```
+
 ## Commands
 
 ### `awecontrib install`
