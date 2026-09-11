@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "awecontrib"
+version = "0.1.0"
+description = "Shared tooling for the awe series: one verify entry per repo, one version truth per repo."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["click>=8.1"]
+authors = [
+  { name = "Peng" }
+]
+license = "MPL-2.0"
+keywords = ["ai", "agent", "cli", "ci", "tooling"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Build Tools"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+awecontrib = "awecontrib.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
